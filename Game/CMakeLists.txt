@@ -1,9 +1,14 @@
 project(Game)
 
 add_executable(Game
+    src/SoundBuffer.cpp
+    src/SoundEffect.cpp
     src/AudioEngine.cpp
     src/Main.cpp
 )
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/res
+     DESTINATION ${CMAKE_BINARY_DIR}/Game)
 
 target_include_directories(Game PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
