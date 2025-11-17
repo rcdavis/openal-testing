@@ -4,6 +4,7 @@
 		{
 			"name": "Linux (Debug)",
 			"includePath": [
+				"${workspaceFolder}/Game/include",
 				"/usr/local/include",
 				"/usr/include"
 			],

@@ -1,17 +1,11 @@
 
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <iostream>
+#include "AudioEngine.h"
 
 int main(int argc, char** argv) {
-	ALCdevice* device = alcOpenDevice(nullptr);
-	if (!device) {
-		std::cerr << "Failed to open device\n";
+	if (!AudioEngine::Init()) {
 		return -1;
 	}
 
-	std::cout << "Opened audio device\n";
-	alcCloseDevice(device);
-
+	AudioEngine::Shutdown();
 	return 0;
 }
