@@ -3,25 +3,23 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <string>
 
 #include <AL/al.h>
 
 namespace FileUtils {
-	struct WavHeader {
-		char riff[4];
-		uint32_t chunkSize;
-		char wave[4];
-		char fmt[4];
-		uint32_t subchunk1Size;
+	struct WavChunkHeader {
+		char id[4];
+		uint32_t size;
+	};
+
+	struct WavFmtChunk {
 		uint16_t audioFormat;
 		uint16_t numChannels;
 		uint32_t sampleRate;
 		uint32_t byteRate;
 		uint16_t blockAlign;
 		uint16_t bitsPerSample;
-
-		char dataHeader[4];
-		uint32_t dataSize;
 	};
 
 	bool ParseWav(const char* filename, std::vector<uint8_t>& audioData, uint32_t& format, uint32_t& sampleRate) {
@@ -34,29 +32,63 @@ namespace FileUtils {
 			return false;
 		}
 
-		WavHeader header;
-		file.read((char*)&header, sizeof(WavHeader));
+		std::cout << "Parsing WAV file " << filename << "\n";
 
-		if (strncmp(header.riff, "RIFF", 4) != 0 || strncmp(header.wave, "WAVE", 4) != 0) {
-			std::cerr << "Not a valid WAV file\n";
+		WavChunkHeader riffHeader;
+		file.read((char*)&riffHeader, sizeof(WavChunkHeader));
+
+		if (strncmp(riffHeader.id, "RIFF", 4) != 0) {
+			std::cerr << filename << " Doesn't have the RIFF chunk\n";
 			return false;
 		}
 
-		audioData.resize(header.dataSize);
-		file.read((char*)audioData.data(), header.dataSize);
+		char waveId[4];
+		file.read(waveId, 4);
 
-		if (header.numChannels == 1 && header.bitsPerSample == 8)
-			format = AL_FORMAT_MONO8;
-		else if (header.numChannels == 1 && header.bitsPerSample == 16)
-			format = AL_FORMAT_MONO16;
-		else if (header.numChannels == 2 && header.bitsPerSample == 8)
-			format == AL_FORMAT_STEREO8;
-		else if (header.numChannels == 2 && header.bitsPerSample == 16)
-			format == AL_FORMAT_STEREO16;
-		else
+		if (strncmp(waveId, "WAVE", 4) != 0) {
+			std::cerr << filename << " is not a valid WAV file\n";
 			return false;
+		}
 
-		sampleRate = header.sampleRate;
+		while (file) {
+			WavChunkHeader header;
+			file.read((char*)&header, sizeof(WavChunkHeader));
+			if (!file)
+				break; // EOF
+
+			std::cout << "  Found chunk \"" << std::string(header.id, 4) << "\" (" << header.size << " bytes)\n";
+
+			if (strncmp(header.id, "fmt ", 4) == 0) {
+				std::vector<uint8_t> fmtBuffer(header.size);
+				file.read((char*)fmtBuffer.data(), header.size);
+
+				WavFmtChunk fmtChunk;
+				memcpy(&fmtChunk, fmtBuffer.data(), header.size);
+
+				if (fmtChunk.numChannels == 1 && fmtChunk.bitsPerSample == 8)
+					format = AL_FORMAT_MONO8;
+				else if (fmtChunk.numChannels == 1 && fmtChunk.bitsPerSample == 16)
+					format = AL_FORMAT_MONO16;
+				else if (fmtChunk.numChannels == 2 && fmtChunk.bitsPerSample == 8)
+					format == AL_FORMAT_STEREO8;
+				else if (fmtChunk.numChannels == 2 && fmtChunk.bitsPerSample == 16)
+					format == AL_FORMAT_STEREO16;
+				else
+					return false;
+
+				sampleRate = fmtChunk.sampleRate;
+			} else if (strncmp(header.id, "data", 4) == 0) {
+				audioData.resize(header.size);
+				file.read((char*)audioData.data(), header.size);
+			} else {
+				// Other chunk types I don't care about for right now
+				file.seekg(header.size, std::ios::cur);
+			}
+
+			// If the header size is odd, there's an extra padding byte
+			if (header.size % 2 == 1)
+				file.seekg(1, std::ios::cur);
+		}
 
 		return true;
 	}
