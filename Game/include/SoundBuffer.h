@@ -10,7 +10,7 @@ public:
 	SoundBuffer();
 	~SoundBuffer();
 
-	uint32_t Id() const { return id; }
+	uint32_t GetId() const { return id; }
 
 	/**
 	 * Parses an audio file into a buffer.

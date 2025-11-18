@@ -55,7 +55,7 @@ namespace AudioEngine {
 	SoundEffect* PlaySfx(const char* filename) {
 		auto iter = buffers.find(filename);
 		if (iter != buffers.cend()) {
-			sfxList.push_back(std::make_unique<SoundEffect>(iter->second->Id()));
+			sfxList.push_back(std::make_unique<SoundEffect>(iter->second->GetId()));
 			sfxList.back()->Play();
 			return sfxList.back().get();
 		}
@@ -66,7 +66,7 @@ namespace AudioEngine {
 			return nullptr;
 		}
 
-		sfxList.push_back(std::make_unique<SoundEffect>(buffer->Id()));
+		sfxList.push_back(std::make_unique<SoundEffect>(buffer->GetId()));
 		buffers[filename] = std::move(buffer);
 		sfxList.back()->Play();
 		return sfxList.back().get();
