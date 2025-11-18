@@ -1,6 +1,7 @@
 project(Game)
 
 add_executable(Game
+    src/Utils/FileUtils.cpp
     src/SoundBuffer.cpp
     src/SoundEffect.cpp
     src/AudioEngine.cpp
